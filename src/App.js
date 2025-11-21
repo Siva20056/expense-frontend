@@ -3,17 +3,9 @@ import { initializeApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import axios from 'axios';
 
-// REPLACE WITH YOUR FIREBASE CONFIG
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// 1. YOUR CONFIG
 const firebaseConfig = {
-  apiKey: "AIzaSyDjRxy12Xkj4-KnX_sSHX1WRFkugmVdI9s",
+  apiKey: "AIzaSyDjRxy12Xkj4-KnX_sSHX1WRFkugmVdI9s", // Make sure no spaces at start/end
   authDomain: "expensetracker-88238.firebaseapp.com",
   projectId: "expensetracker-88238",
   storageBucket: "expensetracker-88238.firebasestorage.app",
@@ -21,13 +13,13 @@ const firebaseConfig = {
   appId: "1:439768067582:web:1859f7f92a35bbeed8e4af",
   measurementId: "G-FY9JNMXMQV"
 };
-// Initialize Firebase
-console.log("MY KEY IS:", firebaseConfig.apiKey);
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
-// REPLACE WITH YOUR RENDER URL
-const API_URL = "https://expense-backend-bcd9.onrender.com/"; 
+// 2. INITIALIZE FIREBASE (Fixed)
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app); // <--- YOU WERE MISSING THIS LINE!
+
+// 3. YOUR BACKEND URL (Fixed trailing slash)
+const API_URL = "https://expense-backend-bcd9.onrender.com"; 
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -37,12 +29,17 @@ export default function App() {
   const [expenses, setExpenses] = useState([]);
 
   const sendOtp = async () => {
-    if (!window.recaptchaVerifier) window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+    }
     try {
       const confirmation = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
       setConfirmObj(confirmation);
       alert("OTP Sent!");
-    } catch (e) { console.error(e); alert("Error sending OTP"); }
+    } catch (e) { 
+      console.error(e); 
+      alert("Error: " + e.message); 
+    }
   };
 
   const verifyOtp = async () => {
@@ -54,8 +51,10 @@ export default function App() {
   };
 
   const fetchExpenses = async (ph) => {
-    const res = await axios.get(`${API_URL}/api/expenses?phone=${ph}`);
-    setExpenses(res.data);
+    try {
+      const res = await axios.get(`${API_URL}/api/expenses?phone=${ph}`);
+      setExpenses(res.data);
+    } catch (error) { console.error("Fetch error:", error); }
   };
 
   if (!user) return (
