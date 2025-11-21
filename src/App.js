@@ -4,20 +4,29 @@ import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth
 import axios from 'axios';
 
 // REPLACE WITH YOUR FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSy...", 
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "...",
-  appId: "..."
-};
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDjRxy12Xkj4-KnX_sSHX1WRFkugmVdI9s",
+  authDomain: "expensetracker-88238.firebaseapp.com",
+  projectId: "expensetracker-88238",
+  storageBucket: "expensetracker-88238.firebasestorage.app",
+  messagingSenderId: "439768067582",
+  appId: "1:439768067582:web:1859f7f92a35bbeed8e4af",
+  measurementId: "G-FY9JNMXMQV"
+};
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const analytics = getAnalytics(app);
 
 // REPLACE WITH YOUR RENDER URL
-const API_URL = "https://my-expense-api.onrender.com"; 
+const API_URL = "https://expense-backend-bcd9.onrender.com/"; 
 
 export default function App() {
   const [user, setUser] = useState(null);
