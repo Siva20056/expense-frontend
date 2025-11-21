@@ -22,6 +22,7 @@ const firebaseConfig = {
   measurementId: "G-FY9JNMXMQV"
 };
 // Initialize Firebase
+console.log("MY KEY IS:", firebaseConfig.apiKey);
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
