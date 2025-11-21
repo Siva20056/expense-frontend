@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 // REPLACE WITH YOUR RENDER URL
-const API_URL = "https://your-expense-api.onrender.com"; 
+const API_URL = "https://expense-backend-bcd9.onrender.com"; 
 
 export default function App() {
   const [user, setUser] = useState(null);
