@@ -1,91 +1,112 @@
 import React, { useState } from 'react';
-import { initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 import axios from 'axios';
 
-// 1. YOUR CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyDjRxy12Xkj4-KnX_sSHX1WRFkugmVdI9s", // Make sure no spaces at start/end
-  authDomain: "expensetracker-88238.firebaseapp.com",
-  projectId: "expensetracker-88238",
-  storageBucket: "expensetracker-88238.firebasestorage.app",
-  messagingSenderId: "439768067582",
-  appId: "1:439768067582:web:1859f7f92a35bbeed8e4af",
-  measurementId: "G-FY9JNMXMQV"
-};
-
-// 2. INITIALIZE FIREBASE (Fixed)
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app); // <--- YOU WERE MISSING THIS LINE!
-
-// 3. YOUR BACKEND URL (Fixed trailing slash)
-const API_URL = "https://expense-backend-bcd9.onrender.com"; 
+// REPLACE WITH YOUR RENDER URL
+const API_URL = "https://your-expense-api.onrender.com"; 
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [phone, setPhone] = useState('+91');
-  const [otp, setOtp] = useState('');
-  const [confirmObj, setConfirmObj] = useState(null);
+  const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
   const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const sendOtp = async () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
-    }
+  const handleLogin = async () => {
+    if(!phone || !pin) return alert("Please fill details");
+    setLoading(true);
     try {
-      const confirmation = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
-      setConfirmObj(confirmation);
-      alert("OTP Sent!");
-    } catch (e) { 
-      console.error(e); 
-      alert("Error: " + e.message); 
+      const res = await axios.post(`${API_URL}/api/auth/login`, { phone, pin });
+      if (res.data.success) {
+        setUser(res.data.user);
+        fetchExpenses(res.data.user.phone);
+      } else {
+        alert(res.data.message);
+      }
+    } catch (error) {
+      alert("Login Failed: " + (error.response?.data?.message || error.message));
     }
-  };
-
-  const verifyOtp = async () => {
-    try {
-      const res = await confirmObj.confirm(otp);
-      setUser(res.user);
-      fetchExpenses(res.user.phoneNumber);
-    } catch (e) { alert("Invalid OTP"); }
+    setLoading(false);
   };
 
   const fetchExpenses = async (ph) => {
     try {
       const res = await axios.get(`${API_URL}/api/expenses?phone=${ph}`);
       setExpenses(res.data);
-    } catch (error) { console.error("Fetch error:", error); }
+    } catch (error) { console.error("Fetch error", error); }
   };
 
+  // --- LOGIN SCREEN ---
   if (!user) return (
-    <div style={{padding: 20}}>
-      <h2>Login</h2>
-      {!confirmObj ? (
-        <>
-          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91..." />
-          <button onClick={sendOtp}>Send OTP</button>
-          <div id="recaptcha-container"></div>
-        </>
-      ) : (
-        <>
-          <input value={otp} onChange={e => setOtp(e.target.value)} placeholder="OTP" />
-          <button onClick={verifyOtp}>Verify</button>
-        </>
-      )}
+    <div style={{ padding: 40, maxWidth: 400, margin: 'auto', fontFamily: 'sans-serif' }}>
+      <h2> Expense Tracker </h2>
+      <p>Login or Register instantly</p>
+      
+      <label>Phone Number:</label>
+      <input 
+        type="text" 
+        value={phone} 
+        onChange={e => setPhone(e.target.value)} 
+        placeholder="+91..." 
+        style={{ width: '100%', padding: 10, marginTop: 5, marginBottom: 20 }}
+      />
+      
+      <label>Set/Enter PIN:</label>
+      <input 
+        type="password" 
+        value={pin} 
+        onChange={e => setPin(e.target.value)} 
+        placeholder="4 digit pin" 
+        style={{ width: '100%', padding: 10, marginTop: 5, marginBottom: 20 }}
+      />
+
+      <button 
+        onClick={handleLogin} 
+        disabled={loading}
+        style={{ 
+          width: '100%', padding: 12, background: '#007bff', color: '#fff', 
+          border: 'none', borderRadius: 5, cursor: 'pointer' 
+        }}>
+        {loading ? "Processing..." : "Login / Register"}
+      </button>
     </div>
   );
 
+  // --- DASHBOARD SCREEN ---
   return (
-    <div style={{padding: 20}}>
-      <h2>My Expenses</h2>
-      <button onClick={() => fetchExpenses(user.phoneNumber)}>Refresh</button>
-      <ul>
-        {expenses.map(e => (
-          <li key={e._id}>
-            <b>{e.merchant}</b>: ₹{e.amount} <small>({e.category})</small>
-          </li>
-        ))}
-      </ul>
+    <div style={{ padding: 20, fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>My Expenses</h2>
+        <button onClick={() => setUser(null)} style={{ padding: '5px 10px' }}>Logout</button>
+      </div>
+      
+      <button onClick={() => fetchExpenses(user.phone)} style={{ marginBottom: 20, padding: 10 }}>
+        Refresh Data
+      </button>
+
+      <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead style={{ background: '#f0f0f0' }}>
+          <tr>
+            <th>Date</th>
+            <th>Merchant</th>
+            <th>Category</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {expenses.length === 0 ? (
+             <tr><td colSpan="4" style={{textAlign:'center'}}>No expenses found yet.</td></tr>
+          ) : (
+            expenses.map((exp) => (
+              <tr key={exp._id}>
+                <td>{new Date(exp.date).toLocaleDateString()}</td>
+                <td>{exp.merchant}</td>
+                <td>{exp.category}</td>
+                <td style={{ fontWeight: 'bold' }}>₹{exp.amount}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
